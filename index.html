@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محلل Binance AI + 12 مؤشر</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif; background: #0d1117; color: #e6edf3; padding: 16px; min-height: 100vh; }
+  h1 { font-size: 18px; text-align: center; margin-bottom: 6px; color: #f0b90b; }
+  .subtitle { text-align: center; font-size: 12px; color: #8b949e; margin-bottom: 16px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; background: #161b22; padding: 4px; border-radius: 10px; border: 1px solid #30363d; }
+  .tab { flex: 1; padding: 8px 6px; text-align: center; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500; color: #8b949e; transition: all 0.2s; }
+  .tab.active { background: #f0b90b; color: #0d1117; font-weight: bold; }
+  .controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  select, button, input { flex: 1; min-width: 100px; padding: 10px; border-radius: 8px; border: 1px solid #30363d; background: #161b22; color: #e6edf3; font-size: 13px; font-family: inherit; }
+  input::placeholder { color: #6e7681; }
+  button { background: #f0b90b; border-color: #f0b90b; color: #0d1117; font-weight: bold; cursor: pointer; }
+  button:active { background: #d9a700; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status { text-align: center; font-size: 13px; padding: 10px; border-radius: 8px; margin-bottom: 12px; display: none; }
+  .status.loading { background: #1f6feb22; color: #58a6ff; display: block; }
+  .status.error { background: #f8514922; color: #f85149; display: block; }
+  .status.success { background: #23863622; color: #3fb950; display: block; }
+  .token { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+  .token.scam { border: 2px solid #f85149; background: linear-gradient(180deg, #f8514911 0%, #161b22 100%); }
+  .token.suspicious { border: 2px solid #d29922; background: linear-gradient(180deg, #d2992211 0%, #161b22 100%); }
+  .token-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .token-name { font-weight: bold; font-size: 15px; }
+  .token-symbol { font-size: 12px; color: #8b949e; background: #21262d; padding: 2px 8px; border-radius: 6px; }
+  .alpha-badge { font-size: 10px; background: #f0b90b; color: #0d1117; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 6px; }
+  .low-badge { font-size: 10px; background: #f85149; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 6px; }
+  .real-badge { font-size: 10px; background: #238636; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 6px; }
+  .ai-badge { font-size: 10px; background: linear-gradient(135deg, #a371f7, #58a6ff); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 6px; }
+  .scam-badge { font-size: 11px; background: #f85149; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; animation: pulse 1.5s infinite; }
+  .suspicious-badge { font-size: 11px; background: #d29922; color: #0d1117; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .token-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; }
+  .stat-label { color: #8b949e; }
+  .stat-value { color: #e6edf3; font-weight: 500; }
+  .liquidity { color: #3fb950; }
+  .liquidity-low { color: #f85149; }
+  .volume { color: #58a6ff; }
+  .rank { display: inline-block; background: #1f6feb; color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-size: 12px; font-weight: bold; margin-left: 8px; }
+  .rec-box { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 13px; }
+  .rec-box.buy { background: #23863633; border: 1px solid #2ea043; }
+  .rec-box.weak-buy { background: #d2992233; border: 1px solid #d29922; }
+  .rec-box.hold { background: #30363d33; border: 1px solid #6e7681; }
+  .rec-box.sell { background: #f8514933; border: 1px solid #f85149; }
+  .rec-emoji { font-size: 22px; }
+  .rec-text { flex: 1; }
+  .rec-title { font-weight: bold; font-size: 14px; }
+  .rec-score { font-size: 11px; color: #8b949e; margin-top: 2px; }
+  .rec-confidence { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #21262d; color: #e6edf3; }
+  .strategy { margin-top: 8px; padding: 10px; background: #0d1117; border-radius: 6px; font-size: 12px; border-right: 3px solid #f0b90b; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .strategy-item { display: flex; justify-content: space-between; }
+  .strategy-label { color: #8b949e; }
+  .strategy-value { font-weight: bold; }
+  .strategy-value.entry { color: #58a6ff; }
+  .strategy-value.target { color: #3fb950; }
+  .strategy-value.stop { color: #f85149; }
+  .forecast { margin-top: 8px; padding: 8px; background: #161b22; border-radius: 6px; font-size: 12px; color: #8b949e; border-right: 3px solid #1f6feb; }
+  .forecast b { color: #58a6ff; }
+  .scam-warning { margin-top: 10px; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.7; }
+  .scam-warning.high { background: #f8514922; border: 1px solid #f85149; border-right: 4px solid #f85149; }
+  .scam-warning.medium { background: #d2992222; border: 1px solid #d29922; border-right: 4px solid #d29922; }
+  .scam-warning .title { font-weight: bold; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .scam-warning.high .title { color: #f85149; }
+  .scam-warning.medium .title { color: #d29922; }
+  .scam-warning ul { list-style: none; padding: 0; margin-top: 6px; }
+  .scam-warning li { padding: 2px 0; padding-right: 16px; position: relative; color: #ffb3ae; font-size: 12px; }
+  .scam-warning.medium li { color: #f0d78c; }
+  .scam-warning li::before { content: "🚩"; position: absolute; right: 0; font-size: 10px; }
+  footer { text-align: center; font-size: 11px; color: #6e7681; margin-top: 20px; }
+  .empty { text-align: center; padding: 30px; color: #8b949e; font-size: 14px; }
+  .indicators-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+  .indicator-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 10px; font-size: 12px; }
+  .indicator-title { color: #8b949e; font-size: 11px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .indicator-signal { font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+  .signal-buy { background: #23863633; color: #3fb950; }
+  .signal-sell { background: #f8514933; color: #f85149; }
+  .signal-neutral { background: #30363d; color: #8b949e; }
+  .rsi-bar { height: 6px; background: #21262d; border-radius: 3px; margin-top: 6px; position: relative; }
+  .rsi-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .fib-levels { font-size: 11px; line-height: 1.8; }
+  .fib-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #21262d; }
+  .fib-row:last-child { border-bottom: none; }
+  .fib-row.current { background: #1f6feb22; font-weight: bold; color: #58a6ff; padding: 4px; border-radius: 4px; }
+  
+  /* AI Engine Styles */
+  .ai-engine { margin-top: 10px; padding: 14px; background: linear-gradient(135deg, #161b22 0%, #1a1f2e 100%); border: 2px solid #58a6ff; border-radius: 10px; position: relative; overflow: hidden; }
+  .ai-engine::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #a371f7, #58a6ff, #3fb950); animation: aiGlow 2s linear infinite; }
+  @keyframes aiGlow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+  .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .ai-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #a371f7, #58a6ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .ai-title { font-weight: bold; font-size: 14px; color: #a371f7; }
+  .ai-subtitle { font-size: 10px; color: #8b949e; margin-top: 2px; }
+  .ai-decision { display: flex; align-items: center; gap: 12px; padding: 12px; background: #0d1117; border-radius: 8px; margin-bottom: 10px; border-right: 4px solid #58a6ff; }
+  .ai-decision.buy { border-right-color: #3fb950; }
+  .ai-decision.weak-buy { border-right-color: #d29922; }
+  .ai-decision.hold { border-right-color: #8b949e; }
+  .ai-decision.sell { border-right-color: #f85149; }
+  .ai-emoji { font-size: 32px; }
+  .ai-decision-text { flex: 1; }
+  .ai-decision-title { font-weight: bold; font-size: 15px; }
+  .ai-decision-reason { font-size: 11px; color: #8b949e; margin-top: 3px; line-height: 1.5; }
+  .ai-confidence-box { text-align: center; padding: 6px 10px; background: #21262d; border-radius: 6px; }
+  .ai-confidence-value { font-weight: bold; font-size: 18px; color: #58a6ff; }
+  .ai-confidence-label { font-size: 9px; color: #8b949e; }
+  .ai-timeframes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .tf-card { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px; text-align: center; }
+  .tf-label { font-size: 10px; color: #8b949e; margin-bottom: 4px; }
+  .tf-value { font-size: 16px; font-weight: bold; }
+  .tf-score { font-size: 10px; color: #8b949e; margin-top: 2px; }
+  .tf-buy { color: #3fb950; }
+  .tf-sell { color: #f85149; }
+  .tf-neutral { color: #8b949e; }
+  .ai-consensus { margin-top: 10px; padding: 8px; background: #0d1117; border-radius: 6px; font-size: 11px; }
+  .ai-consensus-bar { height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; margin-top: 6px; display: flex; }
+  .ai-consensus-fill-buy { background: #3fb950; height: 100%; }
+  .ai-consensus-fill-sell { background: #f85149; height: 100%; }
+  .ai-consensus-fill-neutral { background: #6e7681; height: 100%; }
+  .ai-pattern { margin-top: 8px; padding: 6px 10px; background: #a371f722; border: 1px solid #a371f7; border-radius: 6px; font-size: 11px; color: #c9a9ff; }
+  .ai-pattern b { color: #a371f7; }
+  
+  .note-fab { position: fixed; top: 50%; left: 0; transform: translateY(-50%); background: #f0b90b; color: #0d1117; border: none; border-radius: 0 10px 10px 0; padding: 12px 10px; font-size: 20px; cursor: pointer; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.4); writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; transition: all 0.2s; min-width: auto; flex: none; }
+  .note-fab:active { background: #d9a700; transform: translateY(-50%) scale(0.95); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #161b22; border: 1px solid #30363d; border-radius: 14px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #30363d; }
+  .modal-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
+  .modal-close { background: #21262d; border: 1px solid #30363d; color: #e6edf3; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; min-width: auto; flex: none; }
+  .modal-close:active { background: #30363d; }
+  .modal-section { margin-bottom: 16px; }
+  .modal-section h3 { font-size: 14px; color: #58a6ff; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .modal-section p { font-size: 13px; line-height: 1.7; color: #c9d1d9; margin-bottom: 6px; }
+  .modal-section ul { list-style: none; padding-right: 0; }
+  .modal-section li { font-size: 13px; line-height: 1.7; color: #c9d1d9; padding: 4px 0; padding-right: 20px; position: relative; }
+  .modal-section li::before { content: "•"; position: absolute; right: 4px; color: #f0b90b; font-weight: bold; }
+  .strategy-explain { background: #0d1117; border-radius: 8px; padding: 10px; margin-top: 6px; }
+  .strategy-explain .row { display: flex; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid #21262d; }
+  .strategy-explain .row:last-child { border-bottom: none; }
+  .strategy-explain .ico { font-size: 16px; }
+  .strategy-explain .lbl { color: #8b949e; min-width: 90px; }
+  .strategy-explain .val { color: #c9d1d9; flex: 1; }
+  .warning-box { background: #f8514922; border: 1px solid #f85149; border-radius: 8px; padding: 12px; margin-top: 10px; }
+  .warning-box .title { color: #f85149; font-weight: bold; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .warning-box p { font-size: 12.5px; line-height: 1.7; color: #ffb3ae; }
+  .info-box { background: #1f6feb22; border: 1px solid #1f6feb; border-radius: 8px; padding: 12px; margin-top: 10px; }
+  .info-box .title { color: #58a6ff; font-weight: bold; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .info-box p { font-size: 12.5px; line-height: 1.7; color: #c9d1d9; }
+  .ai-box { background: linear-gradient(135deg, #a371f722, #58a6ff22); border: 1px solid #a371f7; border-radius: 8px; padding: 12px; margin-top: 10px; }
+  .ai-box .title { color: #a371f7; font-weight: bold; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .ai-box p { font-size: 12.5px; line-height: 1.7; color: #c9d1d9; }
+  .compare-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+  .compare-table th { background: #0d1117; color: #58a6ff; padding: 8px; text-align: right; border: 1px solid #30363d; }
+  .compare-table td { padding: 8px; border: 1px solid #30363d; color: #c9d1d9; }
+  .compare-table tr:nth-child(even) td { background: #0d1117; }
+  .checklist-item { padding: 6px 0; color: #c9d1d9; font-size: 13px; line-height: 1.7; border-bottom: 1px solid #21262d; }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item b { color: #f0b90b; }
+  .signal-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+  .signal-table th { background: #0d1117; color: #58a6ff; padding: 8px 6px; text-align: right; border: 1px solid #30363d; font-weight: bold; }
+  .signal-table td { padding: 7px 6px; border: 1px solid #30363d; color: #c9d1d9; font-size: 12px; }
+  .signal-table tr:nth-child(even) td { background: #0d1117; }
+  .signal-table .buy-cell { color: #3fb950; font-weight: 500; }
+  .signal-table .sell-cell { color: #f85149; font-weight: 500; }
+  .signal-table .ind-name { color: #e6edf3; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<button class="note-fab" onclick="openNote()" title="ملاحظات مهمة">📌 ملاحظة</button>
+
+<div class="modal-overlay" id="noteModal" onclick="closeNoteOutside(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">📌 ملاحظات مهمة عن الأداة</span>
+      <button class="modal-close" onclick="closeNote()">✕</button>
+    </div>
+
+    <!-- AI Engine -->
+    <div class="modal-section">
+      <h3>🤖 محرك الذكاء الاصطناعي (AI Engine)</h3>
+      <p>الأداة تستخدم <b>محرك ذكاء اصطناعي</b> يدمج 6 طبقات تحليل:</p>
+      <div class="ai-box">
+        <div class="title">⚡ طبقات التحليل الذكي</div>
+        <p>
+          <b>1. تحليل متعدد الأطر الزمنية:</b> 15د + 1س + 4س<br>
+          <b>2. نظام تصويت مرجّح:</b> الإطار الأكبر = وزن أعلى (4س = 50%)<br>
+          <b>3. حساب الإجماع:</b> كم مؤشر متفق على نفس الإشارة؟<br>
+          <b>4. كشف الأنماط:</b> Doji، Hammer، Engulfing، Shooting Star<br>
+          <b>5. تقدير الثقة:</b> من الإجماع + التقلب + الحجم<br>
+          <b>6. القرار النهائي:</b> توصية AI مع نسبة ثقة واضحة
+        </p>
+      </div>
+      <p style="margin-top:8px;"><b style="color:#a371f7;">🎯 التوصية النهائية:</b> تأتي مع نسبة ثقة (0-100%)، مبنية على مدى توافق المؤشرات عبر الأطر الزمنية.</p>
+    </div>
+
+    <div class="modal-section">
+      <h3>📊 المؤشرات الفنية المدعومة (12 مؤشر)</h3>
+      <ul>
+        <li><b style="color:#3fb950;">RSI (14):</b> قوة نسبية — ذروة شراء/بيع</li>
+        <li><b style="color:#58a6ff;">MACD:</b> تقارب/تباعد المتوسطات — زخم</li>
+        <li><b style="color:#d29922;">EMA 20/50:</b> متوسطات أسية — اتجاه</li>
+        <li><b style="color:#3fb950;">Bollinger Bands:</b> نطاقات التقلب</li>
+        <li><b style="color:#f85149;">Stochastic:</b> مؤشر عشوائي %K/%D</li>
+        <li><b style="color:#f0b90b;">ATR:</b> متوسط المدى الحقيقي — تقلب</li>
+        <li><b style="color:#58a6ff;">Fibonacci:</b> مستويات التصحيح الذهبية</li>
+        <li><b style="color:#3fb950;">OBV:</b> حجم التداول المتوازن</li>
+        <li><b style="color:#f85149;">Ichimoku:</b> سحابة إيشيموكو</li>
+        <li><b style="color:#d29922;">ADX:</b> قوة الاتجاه</li>
+        <li><b style="color:#58a6ff;">Williams %R:</b> مؤشر ويليامز</li>
+        <li><b style="color:#3fb950;">CCI:</b> مؤشر قناة السلع</li>
+      </ul>
+    </div>
+
+    <div class="modal-section">
+      <h3>📋 جدول إشارات المؤشرات (شراء / بيع)</h3>
+      <table class="signal-table">
+        <thead>
+          <tr><th>المؤشر</th><th>🟢 شراء</th><th>🔴 بيع</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="ind-name">RSI (14)</td><td class="buy-cell">أقل من 30</td><td class="sell-cell">أعلى من 70</td></tr>
+          <tr><td class="ind-name">Stochastic</td><td class="buy-cell">K أقل من 20</td><td class="sell-cell">K أعلى من 80</td></tr>
+          <tr><td class="ind-name">Williams %R</td><td class="buy-cell">أقل من -80</td><td class="sell-cell">أعلى من -20</td></tr>
+          <tr><td class="ind-name">CCI</td><td class="buy-cell">أقل من -100</td><td class="sell-cell">أعلى من +100</td></tr>
+          <tr><td class="ind-name">MACD</td><td class="buy-cell">تقاطع صعودي</td><td class="sell-cell">تقاطع هبوطي</td></tr>
+          <tr><td class="ind-name">ADX</td><td class="buy-cell">اتجاه صعودي قوي</td><td class="sell-cell">اتجاه هبوطي قوي</td></tr>
+          <tr><td class="ind-name">Ichimoku</td><td class="buy-cell">فوق السحابة</td><td class="sell-cell">تحت السحابة</td></tr>
+          <tr><td class="ind-name">EMA 20/50</td><td class="buy-cell">EMA20 فوق EMA50</td><td class="sell-cell">EMA20 تحت EMA50</td></tr>
+          <tr><td class="ind-name">Bollinger</td><td class="buy-cell">عند الحد السفلي</td><td class="sell-cell">عند الحد العلوي</td></tr>
+          <tr><td class="ind-name">OBV</td><td class="buy-cell">فوق المتوسط + صعود</td><td class="sell-cell">تحت المتوسط + هبوط</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-section">
+      <h3>⚠️ تذكير مهم حول المؤشرات الفنية</h3>
+      <div class="warning-box" style="margin-top:0;">
+        <div class="title">🚨 12 مؤشر + AI لا يعني دقة 100%</div>
+        <p>
+          • <b>ممكن كل المؤشرات والذكاء الاصطناعي يعطي إشارات كاذبة</b> في سوق جانبي أو عند الأخبار المفاجئة.<br><br>
+          • <b>دايماً استخدم وقف الخسارة</b> — حتى لو كل المؤشرات والـ AI إيجابية.<br><br>
+          • <b>ATR يساعدك تحسب الوقف بذكاء:</b> عادةً <code>2×ATR</code> تحت سعر الدخول.<br><br>
+          • <b>لا تعتمد على مؤشر واحد أو إشارة واحدة</b> — القرار الجيد يحتاج تأكيد.<br><br>
+          • <b>الـ AI هنا "نظام خبير" (Expert System)</b> وليس شبكة عصبية — يعني قواعد مبرمجة يدوياً مبنية على خبرة التحليل الفني، مش تعلّم آلي حقيقي.
+        </p>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h3>🚨 نظام كشف السكام</h3>
+      <p>يفحص سيولة منخفضة، نسبة حجم/سيولة، ارتفاع/انخفاض حاد، عدد حاملين، وغيرها.</p>
+      <p><span class="scam-badge">🚨 سكام محتمل</span> نقاط 70+ &nbsp; <span class="suspicious-badge">⚠️ مشبوه</span> نقاط 40-69</p>
+    </div>
+
+    <div class="modal-section">
+      <h3>⚠️ تنبيه مهم حول كشف السكام</h3>
+      <div class="warning-box" style="margin-top:0;">
+        <p><b>كشف السكام ليس دقيقاً 100%</b> — في عملات احتيالية مش رح تنكشف، وفي عملات شرعية رح تظهر كسكام. استخدمه كمساعدة فقط.</p>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h3>🛡️ دايماً قبل أي استثمار</h3>
+      <div class="strategy-explain">
+        <div class="checklist-item"><b>1.</b> ابحث عن الفريق المسؤول</div>
+        <div class="checklist-item"><b>2.</b> تحقق من عقد العملة</div>
+        <div class="checklist-item"><b>3.</b> شوف مجتمعها</div>
+        <div class="checklist-item"><b>4.</b> لا تحط فلوس في شي ما فهمته</div>
+        <div class="checklist-item"><b>5.</b> لا تستثمر أكثر مما تقدر تخسر</div>
+        <div class="checklist-item"><b>6.</b> ابدأ بمبلغ صغير جداً</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h3>🔍 الفرق بين سيولة Spot و Alpha</h3>
+      <table class="compare-table">
+        <tr><th>المعيار</th><th>Spot</th><th>Alpha</th></tr>
+        <tr><td>المصدر</td><td>تقديرية (×0.3)</td><td>مباشرة</td></tr>
+        <tr><td>الدقة</td><td>تقديرية</td><td>حقيقية</td></tr>
+      </table>
+    </div>
+
+    <div class="modal-section">
+      <h3>🎯 استراتيجية التداول</h3>
+      <div class="strategy-explain">
+        <div class="row"><span class="ico">📍</span><span class="lbl">نقطة الدخول:</span><span class="val">السعر المقترح للدخول.</span></div>
+        <div class="row"><span class="ico">🎯</span><span class="lbl">هدف الربح:</span><span class="val">السعر المستهدف.</span></div>
+        <div class="row"><span class="ico">🛑</span><span class="lbl">وقف الخسارة:</span><span class="val">سعر الحد من الخسائر.</span></div>
+        <div class="row"><span class="ico">⚖️</span><span class="lbl">المخاطرة/المكافأة:</span><span class="val">1:2 = تخاطر بـ1$ لربح 2$.</span></div>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="title">⚠️ تنبيه نهائي</div>
+      <p>المستويات والمؤشرات والذكاء الاصطناعي هي <b>مقترحات آلية</b> و<b>ليست نصيحة مالية</b>. السوق متقلب، وقم ببحثك الخاص <b>(DYOR)</b> قبل أي صفقة.</p>
+    </div>
+  </div>
+</div>
+
+<h1>🤖 محلل Binance AI + 12 مؤشر فني</h1>
+<p class="subtitle">ذكاء اصطناعي + تحليل متعدد الأطر + RSI • MACD • EMA • BB • Stochastic • ATR • Fibonacci • OBV • Ichimoku • ADX • Williams %R • CCI</p>
+
+<div class="tabs">
+  <div class="tab active" data-tab="spot" onclick="switchTab('spot')">🔵 Spot</div>
+  <div class="tab" data-tab="alpha" onclick="switchTab('alpha')">⭐ Alpha</div>
+</div>
+
+<div class="controls">
+  <select id="quoteSelect">
+    <option value="USDT">USDT</option>
+    <option value="BTC">BTC</option>
+    <option value="ETH">ETH</option>
+    <option value="BNB">BNB</option>
+    <option value="FDUSD">FDUSD</option>
+  </select>
+  <select id="sortSelect">
+    <option value="high">💧 الأعلى سيولة</option>
+    <option value="low">🔻 الأقل سيولة</option>
+  </select>
+  <input type="text" id="searchInput" placeholder="ابحث عن عملة..." oninput="filterResults()">
+  <button id="loadBtn" onclick="loadData()">تحليل AI + 12 مؤشر</button>
+</div>
+
+<div id="status" class="status"></div>
+<div id="results"></div>
+
+<footer>
+  البيانات استرشادية فقط — ليست نصيحة مالية<br>
+  Powered by Binance APIs + AI Engine + 12 Technical Indicators
+</footer>
+
+<script>
+const CORS_PROXIES = ["https://corsproxy.io/?url=", "https://api.allorigins.win/raw?url="];
+const BINANCE_SPOT = "https://api.binance.com/api/v3";
+const BINANCE_ALPHA = "https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list";
+const MAX_TOKENS = 200;
+const MAX_INDICATORS = 10;
+
+let currentTab = "spot";
+let allData = [];
+let filteredData = [];
+
+function openNote() { document.getElementById("noteModal").classList.add("show"); document.body.style.overflow = "hidden"; }
+function closeNote() { document.getElementById("noteModal").classList.remove("show"); document.body.style.overflow = ""; }
+function closeNoteOutside(e) { if (e.target.id === "noteModal") closeNote(); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeNote(); });
+
+function setStatus(msg, type) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = "status " + type;
+}
+
+function formatNumber(num) {
+  if (!num || num === 0) return "$0";
+  num = parseFloat(num);
+  if (isNaN(num)) return "$0";
+  if (num >= 1e9) return "$" + (num / 1e9).toFixed(2) + "B";
+  if (num >= 1e6) return "$" + (num / 1e6).toFixed(2) + "M";
+  if (num >= 1e3) return "$" + (num / 1e3).toFixed(2) + "K";
+  return "$" + num.toFixed(2);
+}
+
+function formatPrice(price) {
+  price = parseFloat(price);
+  if (!price || price === 0 || isNaN(price)) return "$0";
+  if (price < 0.0001) return "$" + price.toExponential(2);
+  if (price < 1) return "$" + price.toFixed(6);
+  if (price < 100) return "$" + price.toFixed(4);
+  return "$" + price.toFixed(2);
+}
+
+async function fetchWithProxy(url) {
+  try {
+    const res = await fetch(url);
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(url));
+      if (res.ok) return JSON.parse(await res.text());
+    } catch (e) {}
+  }
+  throw new Error("فشل جلب البيانات");
+}
+
+// ========== دوال المؤشرات الأساسية ==========
+function computeRSI(closes, period = 14) {
+  if (closes.length < period + 1) return null;
+  const changes = closes.slice(1).map((c, i) => c - closes[i]);
+  const gains = changes.map(c => Math.max(c, 0));
+  const losses = changes.map(c => Math.max(-c, 0));
+  let ag = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  let al = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < gains.length; i++) {
+    ag = (ag * (period - 1) + gains[i]) / period;
+    al = (al * (period - 1) + losses[i]) / period;
+  }
+  return 100 - 100 / (1 + ag / (al || 0.0001));
+}
+
+function computeEMA(closes, period) {
+  const k = 2 / (period + 1);
+  const ema = [closes[0]];
+  for (let i = 1; i < closes.length; i++) ema.push(closes[i] * k + ema[i - 1] * (1 - k));
+  return ema;
+}
+
+function computeSMA(v, p) {
+  if (v.length < p) return null;
+  return v.slice(-p).reduce((a, b) => a + b, 0) / p;
+}
+
+function computeMACD(closes) {
+  const e12 = computeEMA(closes, 12), e26 = computeEMA(closes, 26);
+  const ml = e12.map((v, i) => v - e26[i]);
+  const sig = computeEMA(ml, 9);
+  const hist = ml.map((v, i) => v - sig[i]);
+  return { macdLine: ml[ml.length - 1], signal: sig[sig.length - 1], histogram: hist[hist.length - 1], histogramArr: hist };
+}
+
+function computeBollinger(closes, p = 20, m = 2) {
+  const s = closes.slice(-p);
+  const sma = s.reduce((a, b) => a + b, 0) / p;
+  const v = s.reduce((acc, c) => acc + Math.pow(c - sma, 2), 0) / p;
+  const std = Math.sqrt(v);
+  return { upper: sma + m * std, middle: sma, lower: sma - m * std, width: ((m * std * 2) / sma) * 100 };
+}
+
+function computeStochastic(h, l, c, p = 14, sK = 3, sD = 3) {
+  const kV = [];
+  for (let i = p - 1; i < c.length; i++) {
+    const pH = h.slice(i - p + 1, i + 1), pL = l.slice(i - p + 1, i + 1);
+    const hh = Math.max(...pH), ll = Math.min(...pL);
+    kV.push(hh === ll ? 50 : ((c[i] - ll) / (hh - ll)) * 100);
+  }
+  const kS = [];
+  for (let i = sK - 1; i < kV.length; i++) kS.push(kV.slice(i - sK + 1, i + 1).reduce((a, b) => a + b, 0) / sK);
+  const dV = [];
+  for (let i = sD - 1; i < kS.length; i++) dV.push(kS.slice(i - sD + 1, i + 1).reduce((a, b) => a + b, 0) / sD);
+  return { k: kS[kS.length - 1], d: dV[dV.length - 1], prevK: kS[kS.length - 2], prevD: dV[dV.length - 2] };
+}
+
+function computeATR(h, l, c, p = 14) {
+  const trs = [];
+  for (let i = 1; i < c.length; i++) trs.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+  if (trs.length < p) return null;
+  let atr = trs.slice(0, p).reduce((a, b) => a + b, 0) / p;
+  for (let i = p; i < trs.length; i++) atr = (atr * (p - 1) + trs[i]) / p;
+  return atr;
+}
+
+function computeFibonacci(h, l, c, p = 50) {
+  const sh = Math.max(...h.slice(-p)), sl = Math.min(...l.slice(-p));
+  const d = sh - sl, cp = c[c.length - 1];
+  const lv = { "0%": sh, "23.6%": sh - d * 0.236, "38.2%": sh - d * 0.382, "50%": sh - d * 0.5, "61.8%": sh - d * 0.618, "78.6%": sh - d * 0.786, "100%": sl };
+  let near = null, mD = Infinity;
+  for (const [k, v] of Object.entries(lv)) { const dd = Math.abs(cp - v); if (dd < mD) { mD = dd; near = k; } }
+  return { levels: lv, nearestLevel: near };
+}
+
+function computeOBV(c, v) {
+  let obv = 0;
+  const arr = [0];
+  for (let i = 1; i < c.length; i++) {
+    if (c[i] > c[i - 1]) obv += v[i];
+    else if (c[i] < c[i - 1]) obv -= v[i];
+    arr.push(obv);
+  }
+  const ema = computeEMA(arr, 20);
+  const cur = arr[arr.length - 1], curEMA = ema[ema.length - 1];
+  const rec = arr.slice(-10);
+  return { trend: rec[rec.length - 1] > rec[0] ? "UP" : "DOWN", aboveEMA: cur > curEMA };
+}
+
+function computeIchimoku(h, l, c) {
+  const calc = (p) => {
+    if (c.length < p) return null;
+    return (Math.max(...h.slice(-p)) + Math.min(...l.slice(-p))) / 2;
+  };
+  const t = calc(9), k = calc(26);
+  const sA = t && k ? (t + k) / 2 : null;
+  const sB = calc(52);
+  const cp = c[c.length - 1];
+  let sig = "NEUTRAL", lbl = "محايد";
+  if (sA && sB) {
+    const top = Math.max(sA, sB), bot = Math.min(sA, sB);
+    if (cp > top && t > k) { sig = "BUY"; lbl = "فوق السحابة"; }
+    else if (cp < bot && t < k) { sig = "SELL"; lbl = "تحت السحابة"; }
+    else if (cp > top) { sig = "WEAK_BUY"; lbl = "فوق السحابة"; }
+    else if (cp < bot) { sig = "WEAK_SELL"; lbl = "تحت السحابة"; }
+    else lbl = "داخل السحابة";
+  }
+  return { signal: sig, label: lbl, tenkan: t, kijun: k };
+}
+
+function computeADX(h, l, c, p = 14) {
+  if (c.length < p * 2) return null;
+  const trs = [], pDM = [], mDM = [];
+  for (let i = 1; i < c.length; i++) {
+    trs.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+    const up = h[i] - h[i - 1], down = l[i - 1] - l[i];
+    pDM.push(up > down && up > 0 ? up : 0);
+    mDM.push(down > up && down > 0 ? down : 0);
+  }
+  const sm = (arr, pr) => {
+    let s = arr.slice(0, pr).reduce((a, b) => a + b, 0);
+    const o = [s];
+    for (let i = pr; i < arr.length; i++) { s = s - s / pr + arr[i]; o.push(s); }
+    return o;
+  };
+  const trS = sm(trs, p), pS = sm(pDM, p), mS = sm(mDM, p);
+  const pDI = pS.map((v, i) => (v / (trS[i] || 1)) * 100);
+  const mDI = mS.map((v, i) => (v / (trS[i] || 1)) * 100);
+  const dx = pDI.map((v, i) => Math.abs(v - mDI[i]) / ((v + mDI[i]) || 1) * 100);
+  const adx = computeSMA(dx, p);
+  const cPDI = pDI[pDI.length - 1], cMDI = mDI[mDI.length - 1];
+  let trend = "WEAK", label = "ضعيف";
+  if (adx > 50) { trend = "VERY_STRONG"; label = "قوي جداً"; }
+  else if (adx > 25) { trend = "STRONG"; label = "قوي"; }
+  else if (adx > 20) { trend = "MODERATE"; label = "متوسط"; }
+  return { adx, plusDI: cPDI, minusDI: cMDI, trendLabel: label, direction: cPDI > cMDI ? "UP" : "DOWN" };
+}
+
+function computeWilliamsR(h, l, c, p = 14) {
+  if (c.length < p) return null;
+  const hh = Math.max(...h.slice(-p)), ll = Math.min(...l.slice(-p));
+  return ((hh - c[c.length - 1]) / ((hh - ll) || 1)) * -100;
+}
+
+function computeCCI(h, l, c, p = 20) {
+  if (c.length < p) return null;
+  const tp = c.map((cc, i) => (h[i] + l[i] + cc) / 3);
+  const recent = tp.slice(-p);
+  const sma = recent.reduce((a, b) => a + b, 0) / p;
+  const md = recent.reduce((acc, t) => acc + Math.abs(t - sma), 0) / p;
+  return (tp[tp.length - 1] - sma) / ((0.015 * md) || 0.0001);
+}
+
+// ========== كشف أنماط الشموع ==========
+function detectCandlePatterns(klines) {
+  if (!klines || klines.length < 3) return [];
+  const patterns = [];
+  const last3 = klines.slice(-3);
+
+  for (let idx = 0; idx < last3.length; idx++) {
+    const k = last3[idx];
+    const o = parseFloat(k[1]), h = parseFloat(k[2]), l = parseFloat(k[3]), c = parseFloat(k[4]);
+    const body = Math.abs(c - o);
+    const range = h - l;
+    const upperShadow = h - Math.max(o, c);
+    const lowerShadow = Math.min(o, c) - l;
+
+    // Doji
+    if (body < range * 0.1 && range > 0) {
+      patterns.push({ name: "Doji", label: "شمعة حيرة — احتمال انعكاس", type: "neutral" });
+    }
+    // Hammer
+    if (lowerShadow > body * 2 && upperShadow < body * 0.5 && c > o) {
+      patterns.push({ name: "Hammer", label: "مطرقة — إشارة صعودية", type: "buy" });
+    }
+    // Shooting Star
+    if (upperShadow > body * 2 && lowerShadow < body * 0.5 && c < o) {
+      patterns.push({ name: "Shooting Star", label: "شهاب — إشارة هبوطية", type: "sell" });
+    }
+    // Bullish Engulfing
+    if (idx > 0) {
+      const prevO = parseFloat(last3[idx - 1][1]), prevC = parseFloat(last3[idx - 1][4]);
+      if (prevC < prevO && c > o && c > prevO && o < prevC) {
+        patterns.push({ name: "Bullish Engulfing", label: "ابتلاع صعودي", type: "buy" });
+      }
+      if (prevC > prevO && c < o && c < prevO && o > prevC) {
+        patterns.push({ name: "Bearish Engulfing", label: "ابتلاع هبوطي", type: "sell" });
+      }
+    }
+  }
+
+  // إزالة المكرر
+  const seen = new Set();
+  return patterns.filter(p => { if (seen.has(p.name)) return false; seen.add(p.name); return true; });
+}
+
+// ========== تحليل فني لإطار واحد ==========
+function analyzeTimeframe(klines) {
+  if (!klines || klines.length < 60) return null;
+  const closes = klines.map(k => parseFloat(k[4]));
+  const highs = klines.map(k => parseFloat(k[2]));
+  const lows = klines.map(k => parseFloat(k[3]));
+  const volumes = klines.map(k => parseFloat(k[5]));
+  const cp = closes[closes.length - 1];
+
+  const rsi = computeRSI(closes, 14);
+  const macd = computeMACD(closes);
+  const e20 = computeEMA(closes, 20), e50 = computeEMA(closes, 50);
+  const e20C = e20[e20.length - 1], e50C = e50[e50.length - 1];
+  const bb = computeBollinger(closes, 20, 2);
+  const stoch = computeStochastic(highs, lows, closes, 14, 3, 3);
+  const atr = computeATR(highs, lows, closes, 14);
+  const fib = computeFibonacci(highs, lows, closes, 50);
+  const obv = computeOBV(closes, volumes);
+  const ichimoku = computeIchimoku(highs, lows, closes);
+  const adx = computeADX(highs, lows, closes, 14);
+  const williamsR = computeWilliamsR(highs, lows, closes, 14);
+  const cci = computeCCI(highs, lows, closes, 20);
+  const patterns = detectCandlePatterns(klines);
+
+  let buyS = 0, sellS = 0, neutralS = 0, signals = [];
+
+  // RSI
+  let rs = "NEUTRAL", rl = "محايد";
+  if (rsi < 30) { rs = "BUY"; rl = "ذروة بيع"; buyS++; }
+  else if (rsi < 40) { rs = "WEAK_BUY"; rl = "قريب ذروة البيع"; buyS += 0.5; }
+  else if (rsi > 70) { rs = "SELL"; rl = "ذروة شراء"; sellS++; }
+  else if (rsi > 60) { rs = "WEAK_SELL"; rl = "قريب ذروة الشراء"; sellS += 0.5; }
+  else neutralS++;
+
+  // MACD
+  let ms = "NEUTRAL", ml = "محايد";
+  const pH = macd.histogramArr[macd.histogramArr.length - 2] || 0;
+  if (macd.histogram > 0 && pH <= 0) { ms = "BUY"; ml = "تقاطع صعودي"; buyS++; }
+  else if (macd.histogram < 0 && pH >= 0) { ms = "SELL"; ml = "تقاطع هبوطي"; sellS++; }
+  else if (macd.histogram > 0) { ms = "WEAK_BUY"; ml = "زخم صعودي"; buyS += 0.5; }
+  else if (macd.histogram < 0) { ms = "WEAK_SELL"; ml = "زخم هبوطي"; sellS += 0.5; }
+  else neutralS++;
+
+  // EMA
+  let es = "NEUTRAL", el = "محايد", trend = "SIDEWAYS";
+  if (e20C > e50C && cp > e20C) { es = "BUY"; el = "صعودي قوي"; trend = "UP"; buyS++; }
+  else if (e20C > e50C) { es = "WEAK_BUY"; el = "صعودي ضعيف"; trend = "UP"; buyS += 0.5; }
+  else if (e20C < e50C && cp < e20C) { es = "SELL"; el = "هبوطي قوي"; trend = "DOWN"; sellS++; }
+  else if (e20C < e50C) { es = "WEAK_SELL"; el = "هبوطي ضعيف"; trend = "DOWN"; sellS += 0.5; }
+  else neutralS++;
+
+  // Bollinger
+  let bs = "NEUTRAL", bl = "داخل النطاق";
+  if (cp <= bb.lower) { bs = "BUY"; bl = "حد سفلي"; buyS++; }
+  else if (cp >= bb.upper) { bs = "SELL"; bl = "حد علوي"; sellS++; }
+  else neutralS++;
+
+  // Stochastic
+  let ss = "NEUTRAL", sl = "محايد";
+  if (stoch.k < 20 && stoch.d < 20) { ss = "BUY"; sl = "ذروة بيع"; buyS++; }
+  else if (stoch.k > 80 && stoch.d > 80) { ss = "SELL"; sl = "ذروة شراء"; sellS++; }
+  else if (stoch.k > stoch.d && stoch.prevK <= stoch.prevD && stoch.k < 50) { ss = "BUY"; sl = "تقاطع صعودي"; buyS += 0.5; }
+  else if (stoch.k < stoch.d && stoch.prevK >= stoch.prevD && stoch.k > 50) { ss = "SELL"; sl = "تقاطع هبوطي"; sellS += 0.5; }
+  else neutralS++;
+
+  const atrPercent = atr ? (atr / cp) * 100 : 0;
+  let atrLabel = "تقلب طبيعي";
+  if (atrPercent > 5) atrLabel = "تقلب مرتفع جداً";
+  else if (atrPercent > 3) atrLabel = "تقلب مرتفع";
+  else if (atrPercent < 1) atrLabel = "تقلب منخفض";
+
+  let is = ichimoku.signal, il = ichimoku.label;
+  if (is === "BUY") buyS++;
+  else if (is === "SELL") sellS++;
+  else if (is === "WEAK_BUY") buyS += 0.5;
+  else if (is === "WEAK_SELL") sellS += 0.5;
+  else neutralS++;
+
+  let as = "NEUTRAL", al = adx ? adx.trendLabel : "محايد";
+  if (adx && adx.adx > 25) {
+    if (adx.direction === "UP") { as = "BUY"; buyS++; }
+    else { as = "SELL"; sellS++; }
+  } else if (adx && adx.adx > 20) {
+    if (adx.direction === "UP") { as = "WEAK_BUY"; buyS += 0.5; }
+    else { as = "WEAK_SELL"; sellS += 0.5; }
+  } else neutralS++;
+
+  let ws = "NEUTRAL", wl = "محايد";
+  if (williamsR < -80) { ws = "BUY"; wl = "ذروة بيع"; buyS++; }
+  else if (williamsR > -20) { ws = "SELL"; wl = "ذروة شراء"; sellS++; }
+  else neutralS++;
+
+  let cs = "NEUTRAL", cl = "محايد";
+  if (cci < -100) { cs = "BUY"; cl = "ذروة بيع"; buyS++; }
+  else if (cci > 100) { cs = "SELL"; cl = "ذروة شراء"; sellS++; }
+  else neutralS++;
+
+  let os = "NEUTRAL", ol = "محايد";
+  if (obv.aboveEMA && obv.trend === "UP") { os = "BUY"; ol = "تأكيد صعودي"; buyS++; }
+  else if (!obv.aboveEMA && obv.trend === "DOWN") { os = "SELL"; ol = "تأكيد هبوطي"; sellS++; }
+  else neutralS++;
+
+  const total = buyS - sellS;
+  let score = Math.round((total / 12) * 50 + 50);
+  score = Math.max(0, Math.min(100, score));
+
+  return {
+    rsi, rsiSignal: rs, rsiLabel: rl,
+    macd, macdSignal: ms, macdLabel: ml,
+    ema20: e20C, ema50: e50C, emaSignal: es, emaLabel: el, trend,
+    bb, bbSignal: bs, bbLabel: bl,
+    stoch, stochSignal: ss, stochLabel: sl,
+    atr, atrPercent, atrLabel,
+    fib, obv, obvSignal: os, obvLabel: ol,
+    ichimoku, ichiSignal: is, ichiLabel: il,
+    adx, adxSignal: as, adxLabel: al,
+    williamsR, williamsSignal: ws, williamsLabel: wl,
+    cci, cciSignal: cs, cciLabel: cl,
+    patterns, score, buySignals: buyS, sellSignals: sellS, neutralSignals: neutralS,
+    currentPrice: cp
+  };
+}
+
+// ========== 🤖 محرك الذكاء الاصطناعي ==========
+async function runAIEngine(symbol) {
+  try {
+    // جلب 3 أطر زمنية بالتوازي
+    const [tf15m, tf1h, tf4h] = await Promise.all([
+      fetchKlines(symbol, "15m", 100),
+      fetchKlines(symbol, "1h", 100),
+      fetchKlines(symbol, "4h", 100)
+    ]);
+
+    const a15 = analyzeTimeframe(tf15m);
+    const a1h = analyzeTimeframe(tf1h);
+    const a4h = analyzeTimeframe(tf4h);
+
+    if (!a15 || !a1h || !a4h) return null;
+
+    // الأوزان: 4س = 50%, 1س = 30%, 15د = 20%
+    const w15 = 0.20, w1h = 0.30, w4h = 0.50;
+
+    // الحساب المرجّح للنقاط
+    const weightedScore = Math.round(a15.score * w15 + a1h.score * w1h + a4h.score * w4h);
+
+    // قياس الإجماع: كم الأطر تتفق على نفس الاتجاه؟
+    const scores = [a15.score, a1h.score, a4h.score];
+    const avg = scores.reduce((a, b) => a + b, 0) / 3;
+    const variance = scores.reduce((acc, s) => acc + Math.pow(s - avg, 2), 0) / 3;
+    const agreement = Math.max(0, 100 - Math.sqrt(variance) * 1.5); // كل ما قل التشتت زاد الإجماع
+
+    // كشف الأنماط من الإطار 1س (الأكثر توازناً)
+    const patterns = a1h.patterns || [];
+
+    // تعديل النقاط بناءً على الأنماط
+    let patternBonus = 0;
+    patterns.forEach(p => {
+      if (p.type === "buy") patternBonus += 3;
+      if (p.type === "sell") patternBonus -= 3;
+    });
+    const finalScore = Math.max(0, Math.min(100, weightedScore + patternBonus));
+
+    // حساب الثقة
+    let confidence = Math.round(agreement * 0.5 + Math.abs(finalScore - 50) * 1.2);
+    confidence = Math.max(20, Math.min(95, confidence));
+
+    // القرار النهائي
+    let decision, emoji, cls, reason;
+
+    const trend4h = a4h.trend;
+    const trend1h = a1h.trend;
+    const momentum = a1h.macd.histogram > 0 ? "إيجابي" : "سلبي";
+    const rsi1h = a1h.rsi;
+
+    if (finalScore >= 75 && agreement > 60) {
+      decision = "شراء قوي (AI)"; emoji = "🟢"; cls = "buy";
+      reason = `توافق قوي بين الأطر الزمنية (${Math.round(agreement)}%). اتجاه 4س: ${trend4h === 'UP' ? 'صعودي' : 'هبوطي'}, زخم 1س: ${momentum}, RSI: ${rsi1h.toFixed(1)}`;
+    } else if (finalScore >= 60 && agreement > 50) {
+      decision = "شراء حذر (AI)"; emoji = "🟡"; cls = "weak-buy";
+      reason = `إشارات إيجابية مع بعض التشتت. الإجماع: ${Math.round(agreement)}%. يُفضل انتظار تأكيد من 4س.`;
+    } else if (finalScore >= 40) {
+      decision = "انتظار (AI)"; emoji = "⚪"; cls = "hold";
+      reason = `إشارات متضاربة. الإجماع: ${Math.round(agreement)}%. السوق ${trend4h === 'SIDEWAYS' || trend1h === 'SIDEWAYS' ? 'جانبي' : 'غير واضح'}. انتظر إشارة أوضح.`;
+    } else if (finalScore >= 25 && agreement > 50) {
+      decision = "بيع حذر (AI)"; emoji = "🟠"; cls = "sell";
+      reason = `إشارات سلبية. الإجماع: ${Math.round(agreement)}%. اتجاه 4س: ${trend4h === 'DOWN' ? 'هبوطي' : 'صعودي'}, زخم: ${momentum}.`;
+    } else {
+      decision = "بيع قوي (AI)"; emoji = "🔴"; cls = "sell";
+      reason = `توافق قوي على الهبوط (${Math.round(agreement)}%). اتجاه 4س هبوطي, زخم سلبي, RSI: ${rsi1h.toFixed(1)}.`;
+    }
+
+    return {
+      finalScore, confidence, decision, emoji, cls, reason, agreement,
+      tf: {
+        m15: { score: a15.score, trend: a15.trend, rsi: a15.rsi, macd: a15.macd.histogram },
+        h1: { score: a1h.score, trend: a1h.trend, rsi: a1h.rsi, macd: a1h.macd.histogram },
+        h4: { score: a4h.score, trend: a4h.trend, rsi: a4h.rsi, macd: a4h.macd.histogram }
+      },
+      patterns,
+      analysis_1h: a1h  // نحتفظ بالتحليل الكامل للإطار 1س للعرض
+    };
+  } catch (e) {
+    console.error("AI Engine error:", e);
+    return null;
+  }
+}
+
+// ========== كشف السكام ==========
+function detectScam(token) {
+  let s = 0, flags = [];
+  const liq = parseFloat(token.liquidity) || 0;
+  const vol = parseFloat(token.volume24h || token.volume) || 0;
+  const pc = parseFloat(token.priceChangePercent || token.percentChange24h) || 0;
+  const h = parseInt(token.holders) || 0;
+  const fdv = parseFloat(token.fdv) || 0;
+  const mc = parseFloat(token.marketCap) || 0;
+
+  if (liq === 0) { s += 25; flags.push("لا توجد سيولة"); }
+  else if (liq < 5000) { s += 25; flags.push("سيولة منخفضة جداً (<5K$)"); }
+  else if (liq < 10000) { s += 20; flags.push("سيولة منخفضة (<10K$)"); }
+  else if (liq < 30000) { s += 12; flags.push("سيولة ضعيفة"); }
+
+  if (liq > 0) {
+    const r = vol / liq;
+    if (r > 50) { s += 20; flags.push("حجم/سيولة مرتفع جداً — Pump & Dump"); }
+    else if (r > 20) { s += 12; flags.push("حجم/سيولة عالي"); }
+  }
+
+  if (pc > 1000) { s += 15; flags.push("ارتفاع مفرط (+1000%)"); }
+  else if (pc > 500) { s += 10; flags.push("ارتفاع كبير جداً"); }
+  else if (pc > 300) { s += 6; flags.push("ارتفاع كبير"); }
+
+  if (pc < -80) { s += 15; flags.push("انخفاض حاد جداً"); }
+  else if (pc < -50) { s += 10; flags.push("انخفاض حاد"); }
+  else if (pc < -30) { s += 5; flags.push("انخفاض ملحوظ"); }
+
+  if (h > 0) {
+    if (h < 100) { s += 15; flags.push("حاملين قليلين جداً"); }
+    else if (h < 500) { s += 10; flags.push("عدد حاملين منخفض"); }
+    else if (h < 1000) { s += 5; flags.push("عدد حاملين محدود"); }
+  }
+
+  const cap = mc || fdv;
+  if (cap > 0 && liq > 0) {
+    const r = liq / cap;
+    if (r < 0.01) { s += 10; flags.push("سيولة <1% من القيمة السوقية"); }
+    else if (r < 0.03) { s += 5; flags.push("سيولة <3% من القيمة السوقية"); }
+  }
+
+  if (vol === 0) { s += 10; flags.push("لا يوجد حجم تداول"); }
+
+  let level = "safe", label = "✅ آمن نسبياً";
+  if (s >= 70) { level = "high"; label = "🚨 سكام محتمل"; }
+  else if (s >= 40) { level = "medium"; label = "⚠️ مشبوه"; }
+  return { scamScore: Math.min(s, 100), level, label, flags };
+}
+
+function calculateStrategy(price, high, low, score, atr) {
+  const pn = parseFloat(price) || 0;
+  const hn = parseFloat(high) || pn * 1.05;
+  const ln = parseFloat(low) || pn * 0.95;
+  if (pn === 0) return { entry: 0, target: 0, stopLoss: 0, rr: "0" };
+
+  let entry, target, stopLoss;
+  if (atr && atr > 0) {
+    if (score >= 70) { entry = pn - atr * 0.5; stopLoss = entry - atr * 2; target = entry + atr * 4; }
+    else if (score >= 55) { entry = pn - atr * 0.8; stopLoss = entry - atr * 2; target = entry + atr * 3.5; }
+    else if (score >= 40) { entry = ln * 0.99; stopLoss = entry - atr * 1.5; target = entry + atr * 2.5; }
+    else { entry = ln * 0.97; stopLoss = entry - atr * 1.5; target = entry + atr * 2; }
+  } else {
+    if (score >= 70) { entry = pn * 0.995; target = hn * 1.05; stopLoss = ln * 0.97; }
+    else if (score >= 55) { entry = ln * 1.01; target = pn * 1.08; stopLoss = ln * 0.95; }
+    else if (score >= 40) { entry = ln * 0.99; target = pn * 1.05; stopLoss = ln * 0.93; }
+    else { entry = ln * 0.97; target = pn * 1.03; stopLoss = ln * 0.90; }
+  }
+  const risk = entry - stopLoss, reward = target - entry;
+  return { entry, target, stopLoss, rr: risk > 0 ? (reward / risk).toFixed(2) : "N/A" };
+}
+
+function analyzeToken(data) {
+  const liq = parseFloat(data.liquidity) || 0;
+  const vol = parseFloat(data.volume24h || data.volume) || 0;
+  const pc = parseFloat(data.percentChange24h || data.priceChangePercent) || 0;
+  let score = 0, reasons = [], risks = [];
+
+  if (liq >= 5e6) { score += 30; reasons.push("سيولة ممتازة"); }
+  else if (liq >= 1e6) { score += 24; reasons.push("سيولة قوية"); }
+  else if (liq >= 5e5) { score += 18; reasons.push("سيولة جيدة"); }
+  else if (liq >= 1e5) { score += 12; reasons.push("سيولة متوسطة"); }
+  else if (liq >= 2e4) { score += 6; risks.push("سيولة منخفضة"); }
+  else if (liq > 0) { score += 2; risks.push("سيولة ضعيفة جداً"); }
+
+  if (vol >= 1e7) { score += 25; reasons.push("حجم ضخم"); }
+  else if (vol >= 1e6) { score += 20; reasons.push("حجم قوي"); }
+  else if (vol >= 2e5) { score += 14; reasons.push("حجم جيد"); }
+  else if (vol >= 5e4) { score += 8; }
+  else if (vol >= 1e4) { score += 4; risks.push("حجم منخفض"); }
+  else { risks.push("حجم ضعيف"); }
+
+  if (pc >= 20) { score += 16; reasons.push("زخم قوي"); if (pc > 80) risks.push("ارتفاع مفرط"); }
+  else if (pc >= 5) { score += 20; reasons.push("صعودي صحي"); }
+  else if (pc >= 0) { score += 14; reasons.push("استقرار"); }
+  else if (pc >= -10) { score += 8; }
+  else if (pc >= -30) { score += 3; risks.push("هبوط"); }
+  else { risks.push("هبوط حاد"); }
+
+  const r = liq > 0 ? vol / liq : 0;
+  if (r >= 2 && r <= 15) { score += 15; reasons.push("سيولة نشطة"); }
+  else if (r >= 1) { score += 11; reasons.push("نشاط جيد"); }
+  else if (r >= 0.5) { score += 7; }
+  else if (r > 15) { score += 5; risks.push("تداول مفرط"); }
+  else if (liq > 0) { score += 3; risks.push("نشاط منخفض"); }
+  score += 5;
+
+  let conf = 50;
+  if (score >= 75 || score <= 35) conf = 80;
+  else if (score >= 65 || score <= 45) conf = 65;
+  if (liq < 20000) conf -= 20;
+  conf = Math.max(20, Math.min(95, conf));
+
+  let signal, emoji, cls, label;
+  if (score >= 75) { signal = "BUY"; emoji = "🟢"; cls = "buy"; label = "شراء قوي"; }
+  else if (score >= 60) { signal = "WEAK_BUY"; emoji = "🟡"; cls = "weak-buy"; label = "شراء حذر"; }
+  else if (score >= 40) { signal = "HOLD"; emoji = "⚪"; cls = "hold"; label = "انتظار"; }
+  else { signal = "SELL"; emoji = "🔴"; cls = "sell"; label = "تجنب / بيع"; }
+  return { score, signal, emoji, cls, label, confidence: conf, reasons, risks, volToLiq: r };
+}
+
+function generateForecast(data, analysis) {
+  const pc = parseFloat(data.percentChange24h || data.priceChangePercent) || 0;
+  if (analysis.score >= 75) return "📈 <b>توقع إيجابي:</b> مؤشرات قوية، احتمال استمرار الارتفاع.";
+  if (analysis.score >= 60) return "📊 <b>توقع محايد-إيجابي:</b> السوق متماسك، يحتاج تأكيد.";
+  if (analysis.score >= 40) return "⚖️ <b>توقع محايد:</b> تذبذب محتمل، انتظر إشارة.";
+  return "📉 <b>توقع سلبي:</b> " + (pc < -15 ? "ضغط بيعي، احتمال هبوط." : "مؤشرات ضعيفة، خطر هبوط.");
+}
+
+async function fetchKlines(symbol, interval = "1h", limit = 100) {
+  const url = BINANCE_SPOT + `/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  try {
+    const res = await fetch(url);
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(url));
+      if (res.ok) return JSON.parse(await res.text());
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function loadSpot() {
+  const quote = document.getElementById("quoteSelect").value;
+  const sortDir = document.getElementById("sortSelect").value;
+  setStatus("⏳ جاري جلب عملات Binance Spot...", "loading");
+  const data = await fetchWithProxy(BINANCE_SPOT + "/ticker/24hr");
+  if (!Array.isArray(data)) throw new Error("استجابة غير متوقعة");
+
+  let m = data
+    .filter(t => t.symbol.endsWith(quote) && !t.symbol.includes("UP") && !t.symbol.includes("DOWN"))
+    .map(t => ({
+      symbol: t.symbol, base: t.symbol.replace(quote, ""), name: t.symbol.replace(quote, ""),
+      price: parseFloat(t.lastPrice), priceChangePercent: parseFloat(t.priceChangePercent),
+      volume: parseFloat(t.quoteVolume), volume24h: parseFloat(t.quoteVolume),
+      liquidity: parseFloat(t.quoteVolume) * 0.3,
+      high: parseFloat(t.highPrice), low: parseFloat(t.lowPrice),
+      isAlpha: false, liquidityType: "estimated", dex: "Binance Spot"
+    }))
+    .filter(t => t.price > 0 && t.volume > 0);
+
+  if (sortDir === "high") m.sort((a, b) => b.liquidity - a.liquidity);
+  else { m = m.filter(t => t.liquidity > 0); m.sort((a, b) => a.liquidity - b.liquidity); }
+  return m.slice(0, MAX_TOKENS);
+}
+
+async function loadAlpha() {
+  const sortDir = document.getElementById("sortSelect").value;
+  setStatus("⏳ جاري جلب عملات Binance Alpha...", "loading");
+  const data = await fetchWithProxy(BINANCE_ALPHA);
+  if (!data || !data.data || !Array.isArray(data.data)) throw new Error("استجابة غير متوقعة");
+
+  let m = data.data
+    .filter(t => t.price && parseFloat(t.price) > 0)
+    .map(t => ({
+      symbol: t.symbol || t.name, base: t.symbol || t.name, name: t.name || t.symbol,
+      price: parseFloat(t.price) || 0, priceChangePercent: parseFloat(t.percentChange24h) || 0,
+      volume: parseFloat(t.volume24h) || 0, volume24h: parseFloat(t.volume24h) || 0,
+      liquidity: parseFloat(t.liquidity) || 0,
+      high: parseFloat(t.high24h) || parseFloat(t.price) * 1.05,
+      low: parseFloat(t.low24h) || parseFloat(t.price) * 0.95,
+      marketCap: parseFloat(t.marketCap) || 0, fdv: parseFloat(t.fdv) || 0,
+      holders: parseInt(t.holders) || 0, chainName: t.chainName || "",
+      isAlpha: true, liquidityType: "real", dex: "Binance Alpha"
+    }));
+
+  if (sortDir === "high") m.sort((a, b) => b.liquidity - a.liquidity);
+  else { m = m.filter(t => t.liquidity > 0); m.sort((a, b) => a.liquidity - b.liquidity); }
+  return m.slice(0, MAX_TOKENS);
+}
+
+function renderResults(data) {
+  const results = document.getElementById("results");
+  const sortDir = document.getElementById("sortSelect").value;
+  if (!data.length) { results.innerHTML = '<div class="empty">🔍 ما في نتائج</div>'; return; }
+
+  let html = "", scamC = 0, suspC = 0;
+  data.forEach((token, i) => {
+    const a = analyzeToken(token);
+    const fc = generateForecast(token, a);
+    const scam = detectScam(token);
+    if (scam.level === "high") scamC++;
+    if (scam.level === "medium") suspC++;
+
+    const cc = token.priceChangePercent >= 0 ? "#3fb950" : "#f85149";
+    const cs = token.priceChangePercent >= 0 ? "+" : "";
+    const st = calculateStrategy(token.price, token.high, token.low, a.score, null);
+
+    const rH = a.reasons.length ? '<div style="color:#3fb950; font-size:11px; margin-top:4px;">✅ ' + a.reasons.join(" • ") + '</div>' : '';
+    const kH = a.risks.length ? '<div style="color:#f85149; font-size:11px; margin-top:2px;">⚠️ ' + a.risks.join(" • ") + '</div>' : '';
+    const ab = token.isAlpha ? '<span class="alpha-badge">ALPHA</span>' : '';
+    const aib = '<span class="ai-badge">🤖 AI</span>';
+    const lb = sortDir === "low" ? '<span class="low-badge">⚠️ سيولة منخفضة</span>' : '';
+    const lc = sortDir === "low" ? "liquidity-low" : "liquidity";
+    const rb = token.liquidityType === "real" ? '<span class="real-badge">✓ سيولة حقيقية</span>' : '';
+
+    let sb = '';
+    if (scam.level === "high") sb = '<span class="scam-badge">🚨 سكام محتمل</span>';
+    else if (scam.level === "medium") sb = '<span class="suspicious-badge">⚠️ مشبوه</span>';
+
+    let sw = '';
+    if (scam.level !== "safe" && scam.flags.length > 0) {
+      const wc = scam.level === "high" ? "high" : "medium";
+      const wt = scam.level === "high" ? '🚨 تحذير: علامات سكام (خطورة: ' + scam.scamScore + '/100)' : '⚠️ تنبيه: مؤشرات خطر (خطورة: ' + scam.scamScore + '/100)';
+      sw = `<div class="scam-warning ${wc}"><div class="title">${wt}</div><ul>${scam.flags.map(f => '<li>' + f + '</li>').join('')}</ul></div>`;
+    }
+
+    const tc = scam.level === "high" ? "token scam" : (scam.level === "medium" ? "token suspicious" : "token");
+
+    html += `
+      <div class="${tc}" id="token-${i}">
+        <div class="token-header">
+          <span class="token-name"><span class="rank">${i + 1}</span>${aib}${ab}${lb}${sb}${token.name}</span>
+          <span class="token-symbol">${token.symbol}</span>
+        </div>
+        <div class="token-stats">
+          <div><span class="stat-label">💧 السيولة:</span> <span class="stat-value ${lc}">${formatNumber(token.liquidity)}</span> ${rb}</div>
+          <div><span class="stat-label">📊 حجم 24س:</span> <span class="stat-value volume">${formatNumber(token.volume24h)}</span></div>
+          <div><span class="stat-label">💰 السعر:</span> <span class="stat-value">${formatPrice(token.price)}</span></div>
+          <div><span class="stat-label">📈 التغير 24س:</span> <span class="stat-value" style="color:${cc}">${cs}${token.priceChangePercent.toFixed(2)}%</span></div>
+          <div><span class="stat-label">🏦 المنصة:</span> <span class="stat-value">${token.dex}</span></div>
+          ${token.chainName ? `<div><span class="stat-label">🔗 الشبكة:</span> <span class="stat-value">${token.chainName}</span></div>` : ''}
+          ${token.holders ? `<div><span class="stat-label">👥 الحاملين:</span> <span class="stat-value">${token.holders.toLocaleString()}</span></div>` : ''}
+        </div>
+        ${sw}
+        <div class="rec-box ${a.cls}">
+          <span class="rec-emoji">${a.emoji}</span>
+          <div class="rec-text"><div class="rec-title">${a.label}</div><div class="rec-score">النقاط الأساسية: ${a.score}/100</div></div>
+          <span class="rec-confidence">ثقة ${a.confidence}%</span>
+        </div>
+        <div class="strategy">
+          <div class="strategy-item"><span class="strategy-label">📍 دخول:</span><span class="strategy-value entry">${formatPrice(st.entry)}</span></div>
+          <div class="strategy-item"><span class="strategy-label">🎯 ربح:</span><span class="strategy-value target">${formatPrice(st.target)}</span></div>
+          <div class="strategy-item"><span class="strategy-label">🛑 وقف:</span><span class="strategy-value stop">${formatPrice(st.stopLoss)}</span></div>
+          <div class="strategy-item"><span class="strategy-label">⚖️ R/R:</span><span class="strategy-value">1:${st.rr}</span></div>
+        </div>
+        ${rH}${kH}
+        <div class="forecast">${fc}</div>
+        <div id="ai-${i}" style="margin-top:10px;"></div>
+        <div id="indicators-${i}" style="margin-top:10px;"></div>
+      </div>
+    `;
+  });
+
+  results.innerHTML = html;
+  const sumMsg = `✅ تم تحليل ${data.length} عملة بالذكاء الاصطناعي`;
+  const sI = scamC > 0 ? ` • 🚨 ${scamC} سكام محتمل` : '';
+  const suI = suspC > 0 ? ` • ⚠️ ${suspC} مشبوه` : '';
+  setStatus(sumMsg + sI + suI, scamC > 0 ? "error" : "success");
+  loadTechnicalIndicators(data);
+}
+
+async function loadTechnicalIndicators(data) {
+  const toAnalyze = data.slice(0, MAX_INDICATORS);
+
+  for (let i = 0; i < toAnalyze.length; i++) {
+    const token = toAnalyze[i];
+    const aiContainer = document.getElementById("ai-" + i);
+    const c = document.getElementById("indicators-" + i);
+    if (!c) continue;
+
+    if (aiContainer) aiContainer.innerHTML = '<div style="color:#a371f7; font-size:11px; text-align:center; padding:8px;">🤖 جاري تشغيل محرك الذكاء الاصطناعي...</div>';
+    c.innerHTML = '<div style="color:#8b949e; font-size:11px; text-align:center; padding:8px;">⏳ جاري حساب 12 مؤشر...</div>';
+
+    try {
+      // تشغيل محرك AI
+      const ai = await runAIEngine(token.symbol);
+
+      if (ai && aiContainer) {
+        // عرض بطاقة AI
+        const tfBuy = ai.tf.m15.trend === "UP" ? 1 : 0;
+        const tfArr = [ai.tf.m15, ai.tf.h1, ai.tf.h4];
+        let buyCount = 0, sellCount = 0, neutralCount = 0;
+        tfArr.forEach(tf => {
+          if (tf.score >= 60) buyCount++;
+          else if (tf.score <= 40) sellCount++;
+          else neutralCount++;
+        });
+
+        const buyPct = (buyCount / 3) * 100;
+        const sellPct = (sellCount / 3) * 100;
+        const neutralPct = (neutralCount / 3) * 100;
+
+        // الأنماط
+        let patternsHtml = '';
+        if (ai.patterns.length > 0) {
+          patternsHtml = `<div class="ai-pattern"><b>🕯️ أنماط الشموع المكتشفة:</b> ${ai.patterns.map(p => p.name + ' (' + p.label + ')').join(' • ')}</div>`;
+        }
+
+        const tfCell = (label, tf, weight) => {
+          const cls = tf.score >= 60 ? 'tf-buy' : (tf.score <= 40 ? 'tf-sell' : 'tf-neutral');
+          const emoji = tf.trend === "UP" ? "📈" : (tf.trend === "DOWN" ? "📉" : "➡️");
+          return `
+            <div class="tf-card">
+              <div class="tf-label">${label} <span style="color:#a371f7;">(${weight}%)</span></div>
+              <div class="tf-value ${cls}">${emoji} ${tf.score}</div>
+              <div class="tf-score">RSI: ${tf.rsi.toFixed(0)}</div>
+            </div>
+          `;
+        };
+
+        aiContainer.innerHTML = `
+          <div class="ai-engine">
+            <div class="ai-header">
+              <div class="ai-icon">🤖</div>
+              <div>
+                <div class="ai-title">AI Engine — تحليل ذكي متعدد الأطر</div>
+                <div class="ai-subtitle">15د (20%) + 1س (30%) + 4س (50%) + أنماط الشموع</div>
+              </div>
+            </div>
+
+            <div class="ai-decision ${ai.cls}">
+              <span class="ai-emoji">${ai.emoji}</span>
+              <div class="ai-decision-text">
+                <div class="ai-decision-title">${ai.decision}</div>
+                <div class="ai-decision-reason">${ai.reason}</div>
+              </div>
+              <div class="ai-confidence-box">
+                <div class="ai-confidence-value">${ai.confidence}%</div>
+                <div class="ai-confidence-label">ثقة AI</div>
+              </div>
+            </div>
+
+            <div class="ai-timeframes">
+              ${tfCell("15 دقيقة", ai.tf.m15, 20)}
+              ${tfCell("1 ساعة", ai.tf.h1, 30)}
+              ${tfCell("4 ساعات", ai.tf.h4, 50)}
+            </div>
+
+            <div class="ai-consensus">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:#3fb950;">🟢 ${buyCount} صعودي</span>
+                <span style="color:#8b949e;">⚪ ${neutralCount} محايد</span>
+                <span style="color:#f85149;">🔴 ${sellCount} هبوطي</span>
+              </div>
+              <div style="font-size:10px; color:#8b949e;">الإجماع بين الأطر: ${Math.round(ai.agreement)}%</div>
+              <div class="ai-consensus-bar">
+                <div class="ai-consensus-fill-buy" style="width:${buyPct}%;"></div>
+                <div class="ai-consensus-fill-neutral" style="width:${neutralPct}%;"></div>
+                <div class="ai-consensus-fill-sell" style="width:${sellPct}%;"></div>
+              </div>
+            </div>
+
+            ${patternsHtml}
+
+            <div style="margin-top:10px; padding:8px; background:#0d1117; border-radius:6px; font-size:10px; color:#8b949e; text-align:center;">
+              ⚠️ تحليل AI هو نظام خبير (Expert System) — مساعدة فقط، ليست نصيحة مالية
+            </div>
+          </div>
+        `;
+      } else if (aiContainer) {
+        aiContainer.innerHTML = '<div style="color:#8b949e; font-size:11px; text-align:center; padding:8px;">⚠️ فشل تحليل AI</div>';
+      }
+
+      // تحليل الإطار 1س للعرض التفصيلي
+      const kl = await fetchKlines(token.symbol, "1h", 100);
+      if (!kl || kl.length < 60) { c.innerHTML = '<div style="color:#8b949e; font-size:11px; text-align:center; padding:8px;">⚠️ بيانات غير كافية</div>'; continue; }
+      const t = analyzeTimeframe(kl);
+      if (!t) { c.innerHTML = '<div style="color:#8b949e; font-size:11px; text-align:center; padding:8px;">⚠️ فشل الحساب</div>'; continue; }
+
+      const impSt = calculateStrategy(token.price, token.high, token.low, t.score, t.atr);
+      const sC = document.querySelector(`#token-${i} .strategy`);
+      if (sC) {
+        sC.innerHTML = `
+          <div class="strategy-item"><span class="strategy-label">📍 دخول:</span><span class="strategy-value entry">${formatPrice(impSt.entry)}</span></div>
+          <div class="strategy-item"><span class="strategy-label">🎯 ربح:</span><span class="strategy-value target">${formatPrice(impSt.target)}</span></div>
+          <div class="strategy-item"><span class="strategy-label">🛑 وقف:</span><span class="strategy-value stop">${formatPrice(impSt.stopLoss)}</span></div>
+          <div class="strategy-item"><span class="strategy-label">⚖️ R/R:</span><span class="strategy-value">1:${impSt.rr}</span></div>
+        `;
+      }
+
+      const rC = t.rsi < 30 ? "#3fb950" : (t.rsi > 70 ? "#f85149" : "#8b949e");
+      const mC = t.macd.histogram > 0 ? "#3fb950" : "#f85149";
+      const eC = t.trend === "UP" ? "#3fb950" : (t.trend === "DOWN" ? "#f85149" : "#8b949e");
+      const stC = t.stoch.k < 20 ? "#3fb950" : (t.stoch.k > 80 ? "#f85149" : "#8b949e");
+      const wC = t.williamsR < -80 ? "#3fb950" : (t.williamsR > -20 ? "#f85149" : "#8b949e");
+      const cC = t.cci < -100 ? "#3fb950" : (t.cci > 100 ? "#f85149" : "#8b949e");
+      const aC = t.adx ? (t.adx.adx > 25 ? "#3fb950" : "#8b949e") : "#8b949e";
+
+      const fibRows = Object.entries(t.fib.levels).map(([k, v]) => {
+        const isN = k === t.fib.nearestLevel;
+        return `<div class="fib-row ${isN ? 'current' : ''}"><span>${k}</span><span>${formatPrice(v)}</span></div>`;
+      }).join('');
+
+      c.innerHTML = `
+        <div style="font-size:12px; font-weight:bold; color:#58a6ff; margin-bottom:8px;">📊 المؤشرات الفنية (1 ساعة) — 12 مؤشر</div>
+        <div class="indicators-grid">
+          <div class="indicator-card">
+            <div class="indicator-title"><span>RSI (14)</span><span style="color:${rC}">${t.rsi.toFixed(2)}</span></div>
+            <div class="rsi-bar"><div class="rsi-bar-fill" style="width:${Math.min(t.rsi, 100)}%; background:${rC};"></div></div>
+            <div class="indicator-signal ${t.rsiSignal === 'BUY' ? 'signal-buy' : (t.rsiSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.rsiLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>MACD</span><span style="color:${mC}">${t.macd.histogram > 0 ? '+' : ''}${t.macd.histogram.toFixed(4)}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">MACD: ${t.macd.macdLine.toFixed(4)} | Sig: ${t.macd.signal.toFixed(4)}</div>
+            <div class="indicator-signal ${t.macdSignal === 'BUY' ? 'signal-buy' : (t.macdSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.macdLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>EMA 20/50</span><span style="color:${eC}">${t.trend === 'UP' ? '↑' : (t.trend === 'DOWN' ? '↓' : '→')}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">EMA20: ${formatPrice(t.ema20)} | EMA50: ${formatPrice(t.ema50)}</div>
+            <div class="indicator-signal ${t.emaSignal === 'BUY' ? 'signal-buy' : (t.emaSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.emaLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>Bollinger</span><span style="color:#8b949e; font-size:10px;">عرض: ${t.bb.width.toFixed(2)}%</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">أعلى: ${formatPrice(t.bb.upper)} | أسفل: ${formatPrice(t.bb.lower)}</div>
+            <div class="indicator-signal ${t.bbSignal === 'BUY' ? 'signal-buy' : (t.bbSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.bbLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>Stochastic</span><span style="color:${stC}">K:${t.stoch.k.toFixed(1)} D:${t.stoch.d.toFixed(1)}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">%K: ${t.stoch.k.toFixed(2)} | %D: ${t.stoch.d.toFixed(2)}</div>
+            <div class="indicator-signal ${t.stochSignal === 'BUY' ? 'signal-buy' : (t.stochSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.stochLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>ATR (14)</span><span style="color:#f0b90b">${t.atr ? t.atr.toFixed(6) : 'N/A'}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">التقلب: ${t.atrPercent.toFixed(2)}%</div>
+            <div class="indicator-signal signal-neutral">${t.atrLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>OBV</span><span style="color:${t.obv.trend === 'UP' ? '#3fb950' : '#f85149'}">${t.obv.trend === 'UP' ? '↑' : '↓'}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">${t.obv.aboveEMA ? 'فوق' : 'تحت'} المتوسط</div>
+            <div class="indicator-signal ${t.obvSignal === 'BUY' ? 'signal-buy' : (t.obvSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.obvLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>Ichimoku</span><span style="color:${t.ichiSignal === 'BUY' || t.ichiSignal === 'WEAK_BUY' ? '#3fb950' : (t.ichiSignal === 'SELL' || t.ichiSignal === 'WEAK_SELL' ? '#f85149' : '#8b949e')}">${t.ichiSignal === 'BUY' || t.ichiSignal === 'WEAK_BUY' ? '↑' : (t.ichiSignal === 'SELL' || t.ichiSignal === 'WEAK_SELL' ? '↓' : '→')}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">Tenkan: ${t.ichimoku.tenkan ? formatPrice(t.ichimoku.tenkan) : 'N/A'}</div>
+            <div class="indicator-signal ${t.ichiSignal === 'BUY' || t.ichiSignal === 'WEAK_BUY' ? 'signal-buy' : (t.ichiSignal === 'SELL' || t.ichiSignal === 'WEAK_SELL' ? 'signal-sell' : 'signal-neutral')}">${t.ichiLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>ADX (14)</span><span style="color:${aC}">${t.adx ? t.adx.adx.toFixed(2) : 'N/A'}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">+DI: ${t.adx ? t.adx.plusDI.toFixed(1) : 'N/A'} | -DI: ${t.adx ? t.adx.minusDI.toFixed(1) : 'N/A'}</div>
+            <div class="indicator-signal ${t.adxSignal === 'BUY' ? 'signal-buy' : (t.adxSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.adxLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>Williams %R</span><span style="color:${wC}">${t.williamsR.toFixed(2)}</span></div>
+            <div class="rsi-bar"><div class="rsi-bar-fill" style="width:${Math.abs(t.williamsR)}%; background:${wC};"></div></div>
+            <div class="indicator-signal ${t.williamsSignal === 'BUY' ? 'signal-buy' : (t.williamsSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.williamsLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>CCI (20)</span><span style="color:${cC}">${t.cci.toFixed(2)}</span></div>
+            <div style="font-size:10px; color:#8b949e; margin:2px 0;">المدى: -200 إلى +200</div>
+            <div class="indicator-signal ${t.cciSignal === 'BUY' ? 'signal-buy' : (t.cciSignal === 'SELL' ? 'signal-sell' : 'signal-neutral')}">${t.cciLabel}</div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title"><span>Fibonacci</span><span style="color:#58a6ff">مستوى ${t.fib.nearestLevel}</span></div>
+            <div class="fib-levels">${fibRows}</div>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      console.error(e);
+      if (c) c.innerHTML = '<div style="color:#8b949e; font-size:11px; text-align:center; padding:8px;">⚠️ فشل التحميل</div>';
+    }
+  }
+
+  if (data.length > MAX_INDICATORS) {
+    const mI = document.createElement("div");
+    mI.style.cssText = "text-align:center; padding:12px; color:#8b949e; font-size:12px;";
+    mI.innerHTML = `⏳ تم تحليل ${MAX_INDICATORS} عملة بالذكاء الاصطناعي والمؤشرات الفنية.`;
+    document.getElementById("results").appendChild(mI);
+  }
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.getElementById("quoteSelect").style.display = tab === "spot" ? "block" : "none";
+  document.getElementById("searchInput").value = "";
+  loadData();
+}
+
+function filterResults() {
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  if (!q) { renderResults(filteredData); return; }
+  const f = filteredData.filter(t => t.symbol.toLowerCase().includes(q) || (t.name && t.name.toLowerCase().includes(q)));
+  renderResults(f);
+}
+
+async function loadData() {
+  const btn = document.getElementById("loadBtn");
+  btn.disabled = true;
+  document.getElementById("results").innerHTML = "";
+  try {
+    let data = currentTab === "spot" ? await loadSpot() : await loadAlpha();
+    allData = data; filteredData = data;
+    if (!data.length) { setStatus("⚠️ ما في بيانات", "error"); return; }
+    renderResults(data);
+  } catch (error) {
+    console.error(error);
+    setStatus("❌ " + error.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener("change", e => { if (e.target.id === "sortSelect") loadData(); });
+window.addEventListener("load", () => { loadData(); });
+</script>
+
+</body>
+</html>
